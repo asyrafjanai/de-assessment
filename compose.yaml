@@ -1,0 +1,43 @@
+services:
+  jupyterlab:
+    container_name: jupyterlab
+    image: jupyter/all-spark-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/data
+      - ./work:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-password}
+      - GRANT_SUDO=yes
+    networks:
+      - spark-network
+    user: root
+
+  spark-master:
+    container_name: spark-master
+    image: bitnami/spark:3.5.0
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - SPARK_MODE=master
+    networks:
+      - spark-network
+
+  spark-worker:
+    container_name: spark-worker
+    image: bitnami/spark:3.5.0
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ./work:/home/jovyan/work
+    depends_on:
+      - spark-master
+    networks:
+      - spark-network
+networks:
+  spark-network:
+    driver: bridge
